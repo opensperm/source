@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { z } from 'zod';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -24,6 +25,10 @@ const LLM_OLLAMA_MAP: Record<string, string> = {
   'llama3-8b': 'llama3.1:8b',
 };
 
+const deploySchema = z.object({
+  agentId: z.union([z.string(), z.number()]),
+});
+
 async function gql(query: string) {
   const res = await fetch(RUNPOD_GQL, {
     method: 'POST',
@@ -37,8 +42,18 @@ async function gql(query: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { agentId } = await req.json();
-  if (!agentId) return NextResponse.json({ error: 'Missing agentId' }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (err) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  const parsed = deploySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
+  }
+  const agentId = parsed.data.agentId;
 
   const agentRes = await pool.query('SELECT * FROM agents WHERE id = $1 LIMIT 1', [agentId]);
   if (!agentRes.rows.length) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
@@ -51,18 +66,22 @@ export async function POST(req: NextRequest) {
   // Startup script: install Ollama + OpenClaw, pull model, start services
   const startupScript = [
     '#!/bin/bash',
-    'set -e',
+    'set -euo pipefail',
+    'export DEBIAN_FRONTEND=noninteractive',
     '# Install Ollama',
-    'curl -fsSL https://ollama.ai/install.sh | sh',
+    'curl -fsSL --retry 3 --max-time 120 https://ollama.ai/install.sh -o /tmp/ollama_install.sh',
+    'bash /tmp/ollama_install.sh',
     'ollama serve &',
     'sleep 5',
     `ollama pull ${ollamaModel} &`,
-    '# Install Node.js 20',
-    'curl -fsSL https://deb.nodesource.com/setup_20.x | bash -',
+    '# Install Node.js 20 (pinned script)',
+    'curl -fsSL --retry 3 --max-time 120 https://deb.nodesource.com/setup_20.x -o /tmp/node_setup.sh',
+    'bash /tmp/node_setup.sh',
     'apt-get install -y nodejs',
     '# Install Open WebUI (Ollama frontend) via pip',
     'apt-get install -y python3-pip python3-venv',
     'python3 -m venv /opt/webui-venv',
+    '/opt/webui-venv/bin/pip install --upgrade pip',
     '/opt/webui-venv/bin/pip install open-webui',
     '# Wait for model pull to finish',
     'wait',
