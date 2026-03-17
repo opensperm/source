@@ -30,10 +30,8 @@ A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod)
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 RUNPOD_API_KEY=your_runpod_api_key
 NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
-# Optional: shared rate limit store
+# Optional: enable shared rate limit store
 REDIS_URL=redis://user:pass@host:6379/0
-# Optional: error tracking
-SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
 ```
 
 ## Quickstart (local)
