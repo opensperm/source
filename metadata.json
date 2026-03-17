@@ -1,0 +1,5 @@
+{
+  "name": "Opensperm",
+  "description": "Private AI on dedicated GPU.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,29 @@
+export default function PrivacyPage() {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 md:px-12 md:py-16 text-slate-800 font-sans">
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">Privacy Policy</h1>
+      <p className="text-base text-slate-600 mb-6 leading-relaxed">
+        Last updated: March 2026
+      </p>
+      <hr className="border-slate-100 mb-12" />
+      
+      <div className="space-y-8 text-slate-600">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">1. Data Collection</h3>
+          <p>Opensperm is built on privacy. We collect minimal information necessary to provide the service, such as account emails for billing and encrypted telemetry for system health. We do not collect, read, or store your agent prompts, memory, or outputs.</p>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">2. End-to-End Encryption</h3>
+          <p>All data transmitted between your local client and your Agent Pod is end-to-end encrypted. We do not hold the decryption keys.</p>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">3. Third-Party Services</h3>
+          <p>If you choose to install Private Skills that connect to third-party APIs (e.g., OpenAI, Twitter), your data will be subject to their respective privacy policies once it leaves your Agent Pod.</p>
+        </div>
+      </div>
+
+
+      <div className="text-center text-sm text-slate-500 pb-8">© 2026 Opensperm.io · Terms · Privacy · Disclaimer</div>
+    </div>
+  );
+}

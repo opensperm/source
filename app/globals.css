@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-creepster: var(--font-creepster);
+  
+  --color-brand-blue: #5c7cba;
+  --color-brand-dark: #1a1a1a;
+  --color-brand-orange: #d97757;
+  --color-brand-yellow: #e2d9b3;
+  --color-brand-accent: #ff6b35;
+}
+
+.bg-noise {
+  position: relative;
+}
+
+.bg-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.content-relative {
+  position: relative;
+  z-index: 10;
+}
+
+.wavy-underline {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: white;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 2px;
+}
+
+.wavy-underline-hover {
+  position: relative;
+  text-decoration: none;
+}
+
+.wavy-underline-hover::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  bottom: -6px;
+  left: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 4'%3E%3Cpath fill='none' stroke='white' stroke-width='2' d='M0 2c5 0 5-2 10-2s5 2 10 2'/%3E%3C/svg%3E") repeat-x;
+  background-size: 10px 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.wavy-underline-hover:hover::after {
+  opacity: 1;
+}
+
+.brutalist-btn {
+  background-color: var(--color-brand-accent);
+  color: black;
+  border: 3px solid black;
+  box-shadow: 6px 6px 0px 0px black;
+  transition: all 0.1s ease;
+  font-family: var(--font-display);
+}
+
+.brutalist-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px 0px black;
+  background-color: #ffffff;
+  color: black;
+}
+
+.brutalist-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0px 0px black;
+}
+
+.hand-drawn-border {
+  border: 4px solid rgba(255,255,255,0.3);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+}
