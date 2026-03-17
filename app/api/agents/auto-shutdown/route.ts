@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { captureError } from '@/lib/telemetry';
+import { getRequestId } from '@/lib/logger';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY!;
 const IDLE_TIMEOUT_HOURS = 2;
 const BOOT_GRACE_MINUTES = 30; // don't kill booting pods within this window
 
-async function terminateRunPodPod(podId: string): Promise<boolean> {
+async function terminateRunPodPod(podId: string, req: NextRequest): Promise<boolean> {
   try {
     const res = await fetch('https://api.runpod.io/graphql', {
       method: 'POST',
@@ -29,6 +31,7 @@ async function terminateRunPodPod(podId: string): Promise<boolean> {
     }
     return true;
   } catch (err) {
+    captureError(err, { req, tags: { route: 'agents/auto-shutdown' } });
     console.error('[auto-shutdown] Failed to terminate pod:', err);
     return false;
   }
@@ -86,7 +89,7 @@ export async function GET(req: NextRequest) {
 
     console.log(`[auto-shutdown] Agent "${agent.name}" (id=${agent.id}) idle for 2+ hours — terminating pod ${agent.pod_id}`);
 
-    const ok = await terminateRunPodPod(agent.pod_id);
+    const ok = await terminateRunPodPod(agent.pod_id, req);
 
     // Mark as stopped in DB regardless (pod may already be gone)
     await pool.query(
@@ -102,5 +105,5 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     terminated,
     message: `Terminated ${terminated.length} idle agent(s)`,
-  });
+  }, { headers: { 'X-Request-ID': getRequestId(req) } });
 }
