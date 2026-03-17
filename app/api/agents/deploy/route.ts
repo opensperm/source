@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { z } from 'zod';
+import { captureError } from '@/lib/telemetry';
+import { getRequestId } from '@/lib/logger';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -42,21 +44,22 @@ async function gql(query: string) {
 }
 
 export async function POST(req: NextRequest) {
-  let body: unknown;
   try {
-    body = await req.json();
-  } catch (err) {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch (err) {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: { 'X-Request-ID': getRequestId(req) } });
+    }
 
-  const parsed = deploySchema.safeParse(body);
+    const parsed = deploySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400, headers: { 'X-Request-ID': getRequestId(req) } });
   }
   const agentId = parsed.data.agentId;
 
   const agentRes = await pool.query('SELECT * FROM agents WHERE id = $1 LIMIT 1', [agentId]);
-  if (!agentRes.rows.length) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  if (!agentRes.rows.length) return NextResponse.json({ error: 'Agent not found' }, { status: 404, headers: { 'X-Request-ID': getRequestId(req) } });
   const agent = agentRes.rows[0];
 
   const gpuTypeId = GPU_MAP[agent.gpu_instance] || 'NVIDIA GeForce RTX 3090';
@@ -126,11 +129,11 @@ export async function POST(req: NextRequest) {
   if (result.errors?.length) {
     const msg = result.errors[0].message;
     console.error('RunPod error:', msg);
-    return NextResponse.json({ error: msg }, { status: 400 });
+    return NextResponse.json({ error: msg }, { status: 400, headers: { 'X-Request-ID': getRequestId(req) } });
   }
 
   const pod = result.data?.podFindAndDeployOnDemand;
-  if (!pod) return NextResponse.json({ error: 'Pod creation failed' }, { status: 500 });
+  if (!pod) return NextResponse.json({ error: 'Pod creation failed' }, { status: 500, headers: { 'X-Request-ID': getRequestId(req) } });
 
   // RunPod provides a real public URL for each exposed port
   const realAgentUrl = `https://${pod.id}-4000.proxy.runpod.net`;
@@ -141,5 +144,16 @@ export async function POST(req: NextRequest) {
     ['booting', pod.id, realAgentUrl, agentId]
   );
 
-  return NextResponse.json({ success: true, podId: pod.id, agentUrl: realAgentUrl });
+  return NextResponse.json({ success: true, podId: pod.id, agentUrl: realAgentUrl }, { headers: { 'X-Request-ID': getRequestId(req) } });
+  } catch (err) {
+    const eventId = captureError(err, {
+      req,
+      tags: { route: 'agents/deploy' },
+    });
+    console.error('[deploy] error', err);
+    return NextResponse.json(
+      { error: 'Internal error', requestId: getRequestId(req), eventId },
+      { status: 500, headers: { 'X-Request-ID': getRequestId(req) } }
+    );
+  }
 }
