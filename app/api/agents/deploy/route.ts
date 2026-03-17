@@ -8,6 +8,12 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY!;
 const RUNPOD_GQL = 'https://api.runpod.io/graphql';
+const OLLAMA_INSTALL_URL = 'https://ollama.ai/install.sh';
+const NODE_SETUP_URL = 'https://deb.nodesource.com/setup_20.x';
+const OLLAMA_INSTALL_SHA = process.env.OLLAMA_INSTALL_SHA256; // optional integrity
+const NODE_SETUP_SHA = process.env.NODE_SETUP_SHA256; // optional integrity
+const OPENWEBUI_VERSION = process.env.OPENWEBUI_VERSION; // optional pin
+const OPENWEBUI_PKG = OPENWEBUI_VERSION ? `open-webui==${OPENWEBUI_VERSION}` : 'open-webui';
 
 const GPU_MAP: Record<string, string> = {
   'rtx3070': 'NVIDIA GeForce RTX 3070',
@@ -72,20 +78,22 @@ export async function POST(req: NextRequest) {
     'set -euo pipefail',
     'export DEBIAN_FRONTEND=noninteractive',
     '# Install Ollama',
-    'curl -fsSL --retry 3 --max-time 120 https://ollama.ai/install.sh -o /tmp/ollama_install.sh',
+    `curl -fsSL --retry 3 --max-time 120 ${OLLAMA_INSTALL_URL} -o /tmp/ollama_install.sh`,
+    '[ -n "${OLLAMA_INSTALL_SHA:-}" ] && echo "${OLLAMA_INSTALL_SHA}  /tmp/ollama_install.sh" | sha256sum -c -',
     'bash /tmp/ollama_install.sh',
     'ollama serve &',
     'sleep 5',
     `ollama pull ${ollamaModel} &`,
     '# Install Node.js 20 (pinned script)',
-    'curl -fsSL --retry 3 --max-time 120 https://deb.nodesource.com/setup_20.x -o /tmp/node_setup.sh',
+    `curl -fsSL --retry 3 --max-time 120 ${NODE_SETUP_URL} -o /tmp/node_setup.sh`,
+    '[ -n "${NODE_SETUP_SHA:-}" ] && echo "${NODE_SETUP_SHA}  /tmp/node_setup.sh" | sha256sum -c -',
     'bash /tmp/node_setup.sh',
     'apt-get install -y nodejs',
     '# Install Open WebUI (Ollama frontend) via pip',
     'apt-get install -y python3-pip python3-venv',
     'python3 -m venv /opt/webui-venv',
     '/opt/webui-venv/bin/pip install --upgrade pip',
-    '/opt/webui-venv/bin/pip install open-webui',
+    `/opt/webui-venv/bin/pip install ${OPENWEBUI_PKG}`,
     '# Wait for model pull to finish',
     'wait',
     '# Start Open WebUI on port 4000',

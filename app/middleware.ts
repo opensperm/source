@@ -8,7 +8,7 @@ const RATE_LIMIT = {
   limit: 60, // 60 requests/min per IP
 };
 
-function securityHeaders() {
+function securityHeaders(origin: string) {
   return {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
@@ -17,8 +17,6 @@ function securityHeaders() {
   } satisfies Record<string, string>;
 }
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
-
 export async function middleware(req: NextRequest) {
   // Apply only to /api/*
   if (!req.nextUrl.pathname.startsWith('/api/')) {
@@ -26,20 +24,20 @@ export async function middleware(req: NextRequest) {
   }
 
   const requestId = randomUUID();
-  const originHeader = req.headers.get('origin') || '';
-  const originToUse = !ALLOWED_ORIGINS.length || ALLOWED_ORIGINS.includes(originHeader) ? originHeader : '';
+  const origin = req.nextUrl.origin;
 
-  const corsHeaders: Record<string, string> = {
-    ...(originToUse ? { 'Access-Control-Allow-Origin': originToUse } : {}),
+  // Basic CORS (same-origin or explicit origin reflect)
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-  };
+  } satisfies Record<string, string>;
 
   if (req.method === 'OPTIONS') {
     const res = new NextResponse(null, { status: 204 });
     res.headers.set('X-Request-ID', requestId);
     Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
-    Object.entries(securityHeaders()).forEach(([k, v]) => res.headers.set(k, v));
+    Object.entries(securityHeaders(origin)).forEach(([k, v]) => res.headers.set(k, v));
     return res;
   }
 
@@ -61,7 +59,7 @@ export async function middleware(req: NextRequest) {
       },
     });
     Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
-    Object.entries(securityHeaders()).forEach(([k, v]) => res.headers.set(k, v));
+    Object.entries(securityHeaders(origin)).forEach(([k, v]) => res.headers.set(k, v));
     return res;
   }
 
@@ -70,7 +68,7 @@ export async function middleware(req: NextRequest) {
   res.headers.set('X-RateLimit-Remaining', remaining.toString());
   res.headers.set('X-Request-ID', requestId);
   Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
-  Object.entries(securityHeaders()).forEach(([k, v]) => res.headers.set(k, v));
+  Object.entries(securityHeaders(origin)).forEach(([k, v]) => res.headers.set(k, v));
   return res;
 }
 

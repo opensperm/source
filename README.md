@@ -4,7 +4,6 @@
 A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod) with Ollama and Open WebUI. Auth uses Privy; backend is Next.js API routes backed by Postgres.
 
 [![CI](https://github.com/opensperm/source/actions/workflows/ci.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/ci.yml)
-[![Typecheck](https://github.com/opensperm/source/actions/workflows/typecheck.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/typecheck.yml)
 
 ## Architecture (what happens)
 - **Frontend**: Next.js 15 / React 19, Tailwind CSS 4. Pages live in `app/`. Components for hero/deploy cards/etc. in `components/`.
@@ -39,8 +38,6 @@ SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
 OPENWEBUI_VERSION=0.3.x
 OLLAMA_INSTALL_SHA256=...
 NODE_SETUP_SHA256=...
-# Optional: CORS allowlist (comma-separated origins)
-ALLOWED_ORIGINS=https://app.example.com,https://admin.example.com
 ```
 
 ## Quickstart (local)
@@ -82,7 +79,7 @@ npm run dev   # http://localhost:5000
 - `POST /api/installer` — installer helper
 
 ## Notes
-- Missing or invalid env vars will break deploy/status flows; set all three (`DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`).
-- RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434.
+- Missing or invalid env vars will break deploy/status flows; set all three (`DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`). Use least-privilege DB credentials (schema-limited) and do not expose `DATABASE_URL` in UI/logs.
+- RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434. You can pin Open WebUI and verify installer checksums via env vars.
 - Tailwind 4 is used (no `tailwind.config.js`); styles are largely utility-first with a few custom classes.
 - Default port is 5000 for both dev and start.
