@@ -72,3 +72,67 @@ npm run dev   # http://localhost:5000
 - RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434.
 - Tailwind 4 is used (no `tailwind.config.js`); styles are largely utility-first with a few custom classes.
 - Default port is 5000 for both dev and start.
+
+## Flow diagram (high level)
+```mermaid
+sequenceDiagram
+    participant UI as UI (Next.js)
+    participant API as API Routes
+    participant DB as Postgres
+    participant RP as RunPod
+    participant Pod as GPU Pod (Ollama + Open WebUI)
+
+    UI->>API: POST /api/agents (create agent)
+    API->>DB: INSERT agent row
+    UI->>API: POST /api/agents/deploy {agentId}
+    API->>DB: SELECT agent
+    API->>RP: podFindAndDeployOnDemand (startup script b64)
+    RP-->>API: pod id, proxy urls
+    API->>DB: UPDATE agent (status=booting, pod_id, agent_url)
+    UI->>API: GET /api/agents/status?id=
+    API->>RP: poll pod status
+    RP-->>API: status
+    API->>DB: UPDATE status
+    API-->>UI: status + agent_url
+    UI->>Pod: Open WebUI (4000) via RunPod proxy
+```
+
+## API payload examples
+- **Create agent**
+```http
+POST /api/agents
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "name": "my-agent",
+  "description": "Private GPU agent",
+  "llm_model": "qwen3-8b",
+  "gpu_instance": "rtx4090"
+}
+```
+
+- **Deploy agent**
+```http
+POST /api/agents/deploy
+Content-Type: application/json
+
+{
+  "agentId": 123
+}
+```
+
+- **Get status**
+```http
+GET /api/agents/status?id=123
+```
+
+- **Delete agent**
+```http
+DELETE /api/agents?id=123
+```
+
+- **List agents for user**
+```http
+GET /api/agents?email=user@example.com
+```
