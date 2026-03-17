@@ -4,6 +4,7 @@ import { Pool } from 'pg';
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY!;
 const IDLE_TIMEOUT_HOURS = 2;
+const BOOT_GRACE_MINUTES = 30; // don't kill booting pods within this window
 
 async function terminateRunPodPod(podId: string): Promise<boolean> {
   try {
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
 
   if (agentId) {
     query = `
-      SELECT id, name, pod_id, status, last_active_at
+      SELECT id, name, pod_id, status, last_active_at, booting_started_at
       FROM agents
       WHERE id = $1
         AND status IN ('running', 'booting')
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
     params = [agentId];
   } else {
     query = `
-      SELECT id, name, pod_id, status, last_active_at
+      SELECT id, name, pod_id, status, last_active_at, booting_started_at
       FROM agents
       WHERE status IN ('running', 'booting')
         AND pod_id IS NOT NULL
@@ -73,6 +74,16 @@ export async function GET(req: NextRequest) {
   const terminated: { id: number; name: string; podId: string }[] = [];
 
   for (const agent of idleAgents.rows) {
+    // Skip booting pods within grace window
+    if (agent.status === 'booting' && agent.booting_started_at) {
+      const started = new Date(agent.booting_started_at).getTime();
+      const now = Date.now();
+      const minutes = (now - started) / 1000 / 60;
+      if (minutes < BOOT_GRACE_MINUTES) {
+        continue;
+      }
+    }
+
     console.log(`[auto-shutdown] Agent "${agent.name}" (id=${agent.id}) idle for 2+ hours — terminating pod ${agent.pod_id}`);
 
     const ok = await terminateRunPodPod(agent.pod_id);
