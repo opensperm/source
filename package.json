@@ -8,6 +8,7 @@
     "build:prod": "next build",
     "start": "next start -p 5000 -H 0.0.0.0",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "clean": "next clean"
   },
   "dependencies": {
