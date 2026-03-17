@@ -32,6 +32,12 @@ RUNPOD_API_KEY=your_runpod_api_key
 NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
 # Optional: enable shared rate limit store
 REDIS_URL=redis://user:pass@host:6379/0
+# Optional: error tracking (set DSN to enable Sentry)
+SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
+# Optional: pin Open WebUI and verify installers
+OPENWEBUI_VERSION=0.3.x
+OLLAMA_INSTALL_SHA256=...
+NODE_SETUP_SHA256=...
 ```
 
 ## Quickstart (local)
@@ -45,6 +51,7 @@ npm run dev   # http://localhost:5000
 - `npm run build` — production build
 - `npm run start` — serve built app
 - `npm run lint` — ESLint
+- `npm run typecheck` — TS type checking
 - `npm run clean` — clear Next.js cache
 
 ## Core flows
@@ -72,7 +79,7 @@ npm run dev   # http://localhost:5000
 - `POST /api/installer` — installer helper
 
 ## Notes
-- Missing or invalid env vars will break deploy/status flows; set all three (`DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`).
-- RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434.
+- Missing or invalid env vars will break deploy/status flows; set all three (`DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`). Use least-privilege DB credentials (schema-limited) and do not expose `DATABASE_URL` in UI/logs.
+- RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434. You can pin Open WebUI and verify installer checksums via env vars.
 - Tailwind 4 is used (no `tailwind.config.js`); styles are largely utility-first with a few custom classes.
 - Default port is 5000 for both dev and start.
