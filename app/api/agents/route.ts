@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { z } from 'zod';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY!;
+
+const emailSchema = z.string().email();
+const createAgentSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1).max(100),
+  description: z.string().max(2000).optional().default(''),
+  llm_model: z.string().min(1).max(100).optional().default('qwen3-8b'),
+  gpu_instance: z.string().min(1).max(100).optional().default('l4'),
+});
+const updateStatusSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  status: z.string().min(1).max(50),
+});
 
 function randomHex(len: number) {
   return Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
@@ -38,8 +52,12 @@ async function terminateRunPodPod(podId: string): Promise<boolean> {
 }
 
 export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get('email');
-  if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 });
+  const emailParam = req.nextUrl.searchParams.get('email');
+  const emailResult = emailSchema.safeParse(emailParam);
+  if (!emailResult.success) {
+    return NextResponse.json({ error: 'Invalid or missing email' }, { status: 400 });
+  }
+  const email = emailResult.data;
 
   // Auto-terminate any idle pods (>2h inactive) for this user before returning list
   const IDLE_HOURS = 2;
@@ -68,10 +86,19 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { email, name, description, llm_model, gpu_instance } = body;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (err) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
-  if (!email || !name) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  const parsed = createAgentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { email, name, description, llm_model, gpu_instance } = parsed.data;
 
   const deployId = randomHex(8);
   const agentUrl = 'pending';
@@ -80,16 +107,25 @@ export async function POST(req: NextRequest) {
     `INSERT INTO agents (user_email, name, description, llm_model, gpu_instance, status, agent_url, deploy_id, booting_started_at, last_active_at)
      VALUES ($1, $2, $3, $4, $5, 'booting', $6, $7, NOW(), NOW())
      RETURNING *`,
-    [email, name, description || '', llm_model || 'qwen3-8b', gpu_instance || 'l4', agentUrl, deployId]
+    [email, name, description, llm_model, gpu_instance, agentUrl, deployId]
   );
   return NextResponse.json({ agent: result.rows[0] });
 }
 
 export async function PATCH(req: NextRequest) {
-  const body = await req.json();
-  const { id, status } = body;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (err) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
-  if (!id || !status) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+  const parsed = updateStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { id, status } = parsed.data;
 
   const result = await pool.query(
     `UPDATE agents SET status = $1 WHERE id = $2 RETURNING *`,
