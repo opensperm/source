@@ -5,55 +5,53 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
-export function DocsSidebar() {
+const navGroups = [
+  {
+    title: "GETTING STARTED",
+    links: [
+      { name: "Welcome", href: "/docs" },
+      { name: "Architecture", href: "/docs/architecture" },
+      { name: "Roadmap", href: "/docs/roadmap" },
+    ]
+  },
+  {
+    title: "OPENSPERM MODULES",
+    links: [
+      { name: "Agent Pod", href: "/docs/agent-pod" },
+      { name: "Agent Runtime", href: "/docs/agent-runtime" },
+      { name: "Agent Models", href: "/docs/agent-models" },
+    ]
+  },
+  {
+    title: "PLATFORM FEATURES",
+    links: [
+      { name: "Private Skills", href: "/docs/private-skills" },
+      { name: "Private Access", href: "/docs/private-access" },
+      { name: "Private Payment", href: "/docs/private-payment" },
+      { name: "Private Memory", href: "/docs/private-memory" },
+      { name: "Private Backup", href: "/docs/private-backup" },
+      { name: "App Manager", href: "/docs/app-manager" },
+    ]
+  },
+  {
+    title: "TOKEN",
+    links: [
+      { name: "Token Info", href: "/docs/token-info" },
+    ]
+  },
+  {
+    title: "RESOURCES",
+    links: [
+      { name: "FAQ", href: "/docs/faq" },
+      { name: "Terms of Service", href: "/docs/terms" },
+      { name: "Privacy Policy", href: "/docs/privacy" },
+    ]
+  }
+];
+
+function NavContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const navGroups = [
-    {
-      title: "GETTING STARTED",
-      links: [
-        { name: "Welcome", href: "/docs" },
-        { name: "Architecture", href: "/docs/architecture" },
-        { name: "Roadmap", href: "/docs/roadmap" },
-      ]
-    },
-    {
-      title: "OPENSPERM MODULES",
-      links: [
-        { name: "Agent Pod", href: "/docs/agent-pod" },
-        { name: "Agent Runtime", href: "/docs/agent-runtime" },
-        { name: "Agent Models", href: "/docs/agent-models" },
-      ]
-    },
-    {
-      title: "PLATFORM FEATURES",
-      links: [
-        { name: "Private Skills", href: "/docs/private-skills" },
-        { name: "Private Access", href: "/docs/private-access" },
-        { name: "Private Payment", href: "/docs/private-payment" },
-        { name: "Private Memory", href: "/docs/private-memory" },
-        { name: "Private Backup", href: "/docs/private-backup" },
-        { name: "App Manager", href: "/docs/app-manager" },
-      ]
-    },
-    {
-      title: "TOKEN",
-      links: [
-        { name: "Token Info", href: "/docs/token-info" },
-      ]
-    },
-    {
-      title: "RESOURCES",
-      links: [
-        { name: "FAQ", href: "/docs/faq" },
-        { name: "Terms of Service", href: "/docs/terms" },
-        { name: "Privacy Policy", href: "/docs/privacy" },
-      ]
-    }
-  ];
-
-  const NavContent = ({ onLinkClick }: { onLinkClick?: () => void }) => (
+  return (
     <>
       <Link href="/" className="flex items-center gap-3 mb-12 pl-2">
         <div className="relative">
@@ -88,6 +86,10 @@ export function DocsSidebar() {
       </nav>
     </>
   );
+}
+
+export function DocsSidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>

@@ -60,14 +60,14 @@ export default function DashboardPage() {
     loadAgent();
   }, [id]);
 
-  async function refreshAgent() {
+  const refreshAgent = useCallback(async () => {
     const res = await fetch(`/api/agents/single?id=${id}`);
     const data = await res.json();
     if (data.agent) {
       setAgent(data.agent);
       if (data.agent.status === 'running') setAgentOnline(true);
     }
-  }
+  }, [id]);
 
   // Ping server every 5 minutes to keep agent alive (resets idle timer)
   const pingActive = useCallback(async () => {
@@ -102,7 +102,7 @@ export default function DashboardPage() {
       } catch {}
     }, 15000);
     return () => clearInterval(interval);
-  }, [agent?.id, agent?.status]);
+  }, [agent?.id, agent?.status, refreshAgent]);
 
   async function checkOnline() {
     if (!agent) return;
