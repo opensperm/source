@@ -1,48 +1,74 @@
 
 # Opensperm Source
 
-Landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod) with Ollama and Open WebUI. Auth uses Privy, backend is Next.js API routes backed by Postgres.
+A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod) with Ollama and Open WebUI. Auth uses Privy; backend is Next.js API routes backed by Postgres.
 
-## Stack
-- Next.js 15 / React 19 / TypeScript
-- Tailwind CSS 4
-- Privy auth
-- RunPod GraphQL (GPU pods), Ollama + Open WebUI bootstrap
-- Postgres via `pg`
+## Architecture (what happens)
+- **Frontend**: Next.js 15 / React 19, Tailwind CSS 4. Pages live in `app/`. Components for hero/deploy cards/etc. in `components/`.
+- **Auth**: Privy email auth (`NEXT_PUBLIC_PRIVY_APP_ID`) via `components/PrivyProvider`.
+- **State + data**: Agents stored in Postgres (`DATABASE_URL`) and served via API routes under `app/api/agents/*` and `app/api/installer`.
+- **Compute**: RunPod GraphQL is used to spin up GPU pods. Startup script installs Ollama, pulls model, and boots Open WebUI.
+- **Runtime target**: Pods expose 11434 (Ollama) and 4000 (Open WebUI) via RunPod proxy; UI displays the public URL.
+
+## Folders
+- `app/` — Next.js app router pages and API routes
+  - `app/api/agents/*` — CRUD + deploy + status for agents
+  - `app/api/installer` — helper installer endpoint
+- `components/` — UI pieces (hero, deploy modal, cards, etc.)
+- `hooks/`, `lib/`, `types/` — utilities and typings
 
 ## Requirements
 - Node.js 20+
-- npm (bundled) or your preferred package manager
-- Access to a Postgres database
-- RunPod API key
-- Privy app ID
+- Postgres instance reachable via `DATABASE_URL`
+- RunPod API key (`RUNPOD_API_KEY`)
+- Privy app ID (`NEXT_PUBLIC_PRIVY_APP_ID`)
 
-## Setup
-1) Install deps
-```bash
-npm install
+## Environment variables (`.env.local`)
 ```
-
-2) Configure env vars in `.env.local` (example)
-```bash
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 RUNPOD_API_KEY=your_runpod_api_key
 NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
 ```
 
-3) Run locally
+## Quickstart (local)
 ```bash
-npm run dev    # starts on http://localhost:5000
+npm install
+npm run dev   # http://localhost:5000
 ```
 
 ## Scripts
-- `npm run dev` — Next.js dev server (port 5000)
+- `npm run dev` — start dev server (port 5000)
 - `npm run build` — production build
-- `npm run start` — start built app
-- `npm run lint` — lint with ESLint
+- `npm run start` — serve built app
+- `npm run lint` — ESLint
 - `npm run clean` — clear Next.js cache
 
-## Deployment notes
-- API routes expect the env vars above; missing values will break deploy flows.
-- RunPod startup script installs Ollama, pulls the selected model, and starts Open WebUI on port 4000; pods expose both 11434 (Ollama) and 4000 (UI).
-- Auth is email-based via Privy; without `NEXT_PUBLIC_PRIVY_APP_ID`, the UI won’t render auth correctly.
+## Core flows
+- **Auth flow**: Privy widget handles email sign-in. When authenticated, UI shows agent list for the user email.
+- **Agent listing**: `/api/agents?email=...` fetches agents from Postgres; UI renders cards.
+- **Deploy flow** (`app/api/agents/deploy`):
+  1) Read agent by `agentId` from Postgres.
+  2) Map requested GPU + LLM to RunPod and Ollama model.
+  3) Build startup script (install Ollama, pull model, install Open WebUI, start both).
+  4) Call RunPod GraphQL `podFindAndDeployOnDemand` with script (base64) and ports 11434/4000 exposed.
+  5) Persist `pod_id`, `agent_url` (RunPod proxy), status `booting`, `booting_started_at` in DB.
+- **Status flow** (`app/api/agents/status`): poll RunPod for pod status; update DB.
+- **Auto-shutdown** (`app/api/agents/auto-shutdown`): stops pods when criteria met.
+- **Destroy** (`app/api/agents/route` DELETE): remove pod + DB row (see API for details).
+
+## API reference (high level)
+- `GET /api/agents?email=` — list agents for user
+- `POST /api/agents` — create agent (expects email/name/config)
+- `DELETE /api/agents?id=` — delete agent
+- `POST /api/agents/deploy` — deploy an agent to RunPod
+- `GET /api/agents/status?id=` — fetch + update pod status
+- `POST /api/agents/auto-shutdown` — shutdown policy hook
+- `GET /api/agents/ping` — health check
+- `GET /api/agents/single?id=` — fetch single agent
+- `POST /api/installer` — installer helper
+
+## Notes
+- Missing or invalid env vars will break deploy/status flows; set all three (`DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`).
+- RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434.
+- Tailwind 4 is used (no `tailwind.config.js`); styles are largely utility-first with a few custom classes.
+- Default port is 5000 for both dev and start.
