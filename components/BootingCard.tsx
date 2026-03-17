@@ -118,7 +118,7 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
       }
     }
     triggerDeploy();
-  }, []);
+  }, [isBooting, addLog, agent.id]);
 
   // Poll RunPod status until running — also checks auto-shutdown eligibility
   useEffect(() => {
@@ -138,7 +138,7 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
     }
     pollStatus();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [done, isBooting]);
+  }, [done, isBooting, agent.id, finishBoot]);
 
   // Animated progress + steps (visual only)
   useEffect(() => {
@@ -199,9 +199,9 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
       clearInterval(progressInterval);
       stepTimers.forEach(t => clearTimeout(t));
     };
-  }, []);
+  }, [isBooting, agent.booting_started_at, agent.gpu_instance, agent.llm_model, addLog]);
 
-  async function finishBoot() {
+  const finishBoot = useCallback(async () => {
     if (completedRef.current) return;
     completedRef.current = true;
     setProgress(100);
@@ -209,7 +209,7 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
     setDone(true);
     addLog('Agent is live at ' + (agent.agent_url !== 'pending' ? agent.agent_url : 'pod endpoint'));
     onStatusChange(agent.id, 'running');
-  }
+  }, [addLog, agent.agent_url, agent.id, onStatusChange]);
 
   async function handleDestroy() {
     if (!confirm(`Destroy agent "${agent.name}"?\n\nThis will permanently terminate the RunPod GPU server and stop billing. This cannot be undone.`)) return;
