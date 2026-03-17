@@ -3,6 +3,8 @@
 
 A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod) with Ollama and Open WebUI. Auth uses Privy; backend is Next.js API routes backed by Postgres.
 
+[![CI](https://github.com/opensperm/source/actions/workflows/ci.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/ci.yml)
+
 ## Architecture (what happens)
 - **Frontend**: Next.js 15 / React 19, Tailwind CSS 4. Pages live in `app/`. Components for hero/deploy cards/etc. in `components/`.
 - **Auth**: Privy email auth (`NEXT_PUBLIC_PRIVY_APP_ID`) via `components/PrivyProvider`.

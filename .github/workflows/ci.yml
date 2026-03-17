@@ -25,7 +25,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build (includes type check)
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
         env:
           DATABASE_URL: postgres://user:pass@localhost:5432/db
           RUNPOD_API_KEY: dummy_runpod_key
