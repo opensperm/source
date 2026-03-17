@@ -8,6 +8,17 @@ const RATE_LIMIT = {
   limit: 60, // 60 requests/min per IP
 };
 
+function securityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+  } satisfies Record<string, string>;
+}
+
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+
 export async function middleware(req: NextRequest) {
   // Apply only to /api/*
   if (!req.nextUrl.pathname.startsWith('/api/')) {
@@ -15,6 +26,22 @@ export async function middleware(req: NextRequest) {
   }
 
   const requestId = randomUUID();
+  const originHeader = req.headers.get('origin') || '';
+  const originToUse = !ALLOWED_ORIGINS.length || ALLOWED_ORIGINS.includes(originHeader) ? originHeader : '';
+
+  const corsHeaders: Record<string, string> = {
+    ...(originToUse ? { 'Access-Control-Allow-Origin': originToUse } : {}),
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  };
+
+  if (req.method === 'OPTIONS') {
+    const res = new NextResponse(null, { status: 204 });
+    res.headers.set('X-Request-ID', requestId);
+    Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
+    Object.entries(securityHeaders()).forEach(([k, v]) => res.headers.set(k, v));
+    return res;
+  }
 
   const ip =
     req.ip ||
@@ -25,7 +52,7 @@ export async function middleware(req: NextRequest) {
   const { allowed, remaining } = await rateLimit(ip, RATE_LIMIT.limit, RATE_LIMIT.windowMs);
 
   if (!allowed) {
-    return new NextResponse(JSON.stringify({ error: 'Too many requests', requestId }), {
+    const res = new NextResponse(JSON.stringify({ error: 'Too many requests', requestId }), {
       status: 429,
       headers: {
         'Content-Type': 'application/json',
@@ -33,12 +60,17 @@ export async function middleware(req: NextRequest) {
         'X-Request-ID': requestId,
       },
     });
+    Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
+    Object.entries(securityHeaders()).forEach(([k, v]) => res.headers.set(k, v));
+    return res;
   }
 
   const res = NextResponse.next();
   res.headers.set('X-RateLimit-Limit', RATE_LIMIT.limit.toString());
   res.headers.set('X-RateLimit-Remaining', remaining.toString());
   res.headers.set('X-Request-ID', requestId);
+  Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
+  Object.entries(securityHeaders()).forEach(([k, v]) => res.headers.set(k, v));
   return res;
 }
 

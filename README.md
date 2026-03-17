@@ -4,6 +4,7 @@
 A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod) with Ollama and Open WebUI. Auth uses Privy; backend is Next.js API routes backed by Postgres.
 
 [![CI](https://github.com/opensperm/source/actions/workflows/ci.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/ci.yml)
+[![Typecheck](https://github.com/opensperm/source/actions/workflows/typecheck.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/typecheck.yml)
 
 ## Architecture (what happens)
 - **Frontend**: Next.js 15 / React 19, Tailwind CSS 4. Pages live in `app/`. Components for hero/deploy cards/etc. in `components/`.
@@ -32,6 +33,14 @@ RUNPOD_API_KEY=your_runpod_api_key
 NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
 # Optional: enable shared rate limit store
 REDIS_URL=redis://user:pass@host:6379/0
+# Optional: error tracking (set DSN to enable Sentry)
+SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
+# Optional: pin Open WebUI and verify installers
+OPENWEBUI_VERSION=0.3.x
+OLLAMA_INSTALL_SHA256=...
+NODE_SETUP_SHA256=...
+# Optional: CORS allowlist (comma-separated origins)
+ALLOWED_ORIGINS=https://app.example.com,https://admin.example.com
 ```
 
 ## Quickstart (local)
@@ -45,6 +54,7 @@ npm run dev   # http://localhost:5000
 - `npm run build` — production build
 - `npm run start` — serve built app
 - `npm run lint` — ESLint
+- `npm run typecheck` — TS type checking
 - `npm run clean` — clear Next.js cache
 
 ## Core flows
