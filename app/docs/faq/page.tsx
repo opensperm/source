@@ -9,7 +9,7 @@ export default function FAQPage() {
       
       <div className="space-y-8">
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-2">Do you have access to my agent's data?</h3>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">Do you have access to my agent’s data?</h3>
           <p className="text-slate-600">No. Your Agent Pods are isolated, and all communication is end-to-end encrypted. We cannot read your prompts, memory, or files.</p>
         </div>
         <div>

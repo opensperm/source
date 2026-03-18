@@ -8,7 +8,7 @@ export default function AgentRuntimePage() {
       <hr className="border-slate-100 mb-12" />
       <h2 className="text-2xl font-bold mb-6 text-slate-900">Execution Engine</h2>
       <p className="text-slate-600 mb-6 leading-relaxed text-base">
-        Our runtime is optimized for low-latency inference and secure tool calling. It acts as the "brain stem" of your agent, translating your high-level goals into actionable steps.
+        Our runtime is optimized for low-latency inference and secure tool calling. It acts as the “brain stem” of your agent, translating your high-level goals into actionable steps.
       </p>
       <ul className="list-disc pl-6 space-y-4 text-slate-600 mb-12">
         <li><strong>Sandboxed Tools:</strong> When an agent uses a skill (like running Python code), it happens in a secondary WebAssembly sandbox.</li>

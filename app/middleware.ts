@@ -17,6 +17,12 @@ function securityHeaders(origin: string) {
   } satisfies Record<string, string>;
 }
 
+const getClientIp = (req: NextRequest) => {
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0].trim();
+  const realIp = req.headers.get('x-real-ip');
+  return forwarded || realIp || 'unknown';
+};
+
 export async function middleware(req: NextRequest) {
   // Apply only to /api/*
   if (!req.nextUrl.pathname.startsWith('/api/')) {
@@ -41,11 +47,7 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  const ip =
-    req.ip ||
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown';
+  const ip = getClientIp(req);
 
   const { allowed, remaining } = await rateLimit(ip, RATE_LIMIT.limit, RATE_LIMIT.windowMs);
 
