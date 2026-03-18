@@ -1,0 +1,32 @@
+name: Preview
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/db
+          RUNPOD_API_KEY: dummy_runpod_key
+          NEXT_PUBLIC_PRIVY_APP_ID: dummy_privy_app_id
+      - name: Upload .next
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next
+
+      # Placeholder: integrate with your hosting (Vercel/Render/etc.)
+      # For Vercel, you could use https://github.com/marketplace/actions/vercel-deploy
+      # For Netlify/Render, replace this step accordingly.
+      - name: Preview placeholder
+        run: echo "Preview artifact uploaded. Integrate hosting deploy here."
