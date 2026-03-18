@@ -17,3 +17,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - name: Build
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/db
+          RUNPOD_API_KEY: dummy_runpod_key
+          NEXT_PUBLIC_PRIVY_APP_ID: dummy_privy_app_id
+        run: npm run build
