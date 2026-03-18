@@ -53,6 +53,70 @@ Installer helper for agents (details in route implementation).
 ## Status values
 - `booting`, `running`, `stopped`
 
+
+
+## Examples
+### Create agent
+Request:
+```http
+POST /api/agents
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "name": "My Agent",
+  "description": "Test agent",
+  "llm_model": "llama3-8b",
+  "gpu_instance": "rtx4090"
+}
+```
+
+Response (200):
+```json
+{
+  "agent": {
+    "id": 1,
+    "name": "My Agent",
+    "status": "stopped",
+    "llm_model": "llama3-8b",
+    "gpu_instance": "rtx4090"
+  }
+}
+```
+
+### Deploy agent
+Request:
+```http
+POST /api/agents/deploy
+Content-Type: application/json
+
+{ "agentId": 1 }
+```
+
+Response (200):
+```json
+{
+  "podId": "pod-123",
+  "agent_url": "https://proxy.runpod.example/1234",
+  "status": "booting"
+}
+```
+
+### Status poll
+Request:
+```http
+GET /api/agents/status?id=1
+```
+
+Response (200):
+```json
+{
+  "podReady": true,
+  "status": "running",
+  "agent_url": "https://proxy.runpod.example/1234"
+}
+```
+
 ## Errors
 - 400/404 for invalid agent id
 - 500 for RunPod/API errors (check logs)
