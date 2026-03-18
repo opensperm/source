@@ -16,6 +16,14 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
       - run: npm run typecheck
       - name: Build
         env:
