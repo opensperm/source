@@ -1,0 +1,48 @@
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright deps
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/db
+          RUNPOD_API_KEY: dummy_runpod_key
+          NEXT_PUBLIC_PRIVY_APP_ID: dummy_privy_app_id
+        run: npm run build
+      - name: Start server
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/db
+          RUNPOD_API_KEY: dummy_runpod_key
+          NEXT_PUBLIC_PRIVY_APP_ID: dummy_privy_app_id
+        run: |
+          nohup npm run start -- --hostname 0.0.0.0 --port 3000 >/tmp/next.log 2>&1 &
+          for i in {1..30}; do
+            curl -sf http://127.0.0.1:3000 && break
+            sleep 2
+          done
+      - name: Run Playwright smoke tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+        run: npm run ci:e2e
+      - name: Upload Playwright report (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
