@@ -9,11 +9,14 @@ on:
 jobs:
   typecheck:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
       - name: Restore Next.js cache
@@ -21,9 +24,9 @@ jobs:
         with:
           path: |
             .next/cache
-          key: ${{ runner.os }}-nextjs-${{ github.sha }}
+          key: ${{ runner.os }}-nextjs-${{ matrix.node-version }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-
+            ${{ runner.os }}-nextjs-${{ matrix.node-version }}-
       - run: npm run typecheck
       - name: Build
         env:

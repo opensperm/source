@@ -9,6 +9,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
@@ -27,9 +30,9 @@ jobs:
         with:
           path: |
             .next/cache
-          key: ${{ runner.os }}-nextjs-${{ github.sha }}
+          key: ${{ runner.os }}-nextjs-${{ matrix.node-version }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-
+            ${{ runner.os }}-nextjs-${{ matrix.node-version }}-
 
       - name: Lint
         run: npm run lint
