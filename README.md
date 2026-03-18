@@ -3,26 +3,6 @@
 Private AI agent dashboard + landing built on Next.js. Provision GPU pods on RunPod, install Ollama + Open WebUI, and expose a simple UI for deploy/status/destroy. Auth via Privy; data in Postgres. CI enforces lint/typecheck/build across Node 20/22.
 
 ---
-## Contents
-- [Stack](#stack)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Diagrams](#diagrams)
-- [Directory layout](#directory-layout)
-- [Environment](#environment)
-- [Quickstart](#quickstart)
-- [Scripts](#scripts)
-- [API overview](#api-overview)
-- [CI/CD](#cicd)
-- [Testing](#testing)
-- [Docker](#docker)
-- [Deploy previews](#deploy-previews)
-- [Troubleshooting](#troubleshooting)
-- [Data model](#data-model)
-- [Auto-shutdown](#auto-shutdown)
-
-
----
 ## Stack
 - **Frontend**: Next.js 15 / React 19, Tailwind 4
 - **Auth**: Privy (email)
