@@ -66,23 +66,6 @@ graph TD
 ### Deploy flow
 ```mermaid
 sequenceDiagram
-
-### Auto-shutdown flow
-```mermaid
-sequenceDiagram
-  participant Cron as Scheduler/Watcher
-  participant API as API /agents/auto-shutdown
-  participant RP as RunPod
-  participant DB as Postgres
-  Cron->>API: POST /auto-shutdown
-  API->>DB: Fetch agents + idle thresholds
-  API->>RP: Query pod status/metrics
-  RP-->>API: status
-  API->>RP: stopPod (if idle/expired)
-  API->>DB: Update status = stopped
-  API-->>Cron: summary
-```
-
   participant User
   participant FE as Frontend
   participant API as API /agents/deploy
@@ -100,6 +83,22 @@ sequenceDiagram
   RP-->>API: pod ready
   API->>DB: Update status=running
   API-->>FE: running + agent_url
+```
+
+### Auto-shutdown flow
+```mermaid
+sequenceDiagram
+  participant Cron as Scheduler/Watcher
+  participant API as API /agents/auto-shutdown
+  participant RP as RunPod
+  participant DB as Postgres
+  Cron->>API: POST /auto-shutdown
+  API->>DB: Fetch agents + idle thresholds
+  API->>RP: Query pod status/metrics
+  RP-->>API: status
+  API->>RP: stopPod (if idle/expired)
+  API->>DB: Update status = stopped
+  API-->>Cron: summary
 ```
 
 ### Integrations at a glance
