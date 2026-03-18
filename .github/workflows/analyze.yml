@@ -1,0 +1,28 @@
+name: Bundle Analyze
+
+on:
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build with analyzer
+        env:
+          DATABASE_URL: postgres://user:pass@localhost:5432/db
+          RUNPOD_API_KEY: dummy_runpod_key
+          NEXT_PUBLIC_PRIVY_APP_ID: dummy_privy_app_id
+          ANALYZE: "true"
+        run: npm run analyze
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analyze
+          path: .next/analyze
+          if-no-files-found: error

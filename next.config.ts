@@ -1,4 +1,9 @@
-import type {NextConfig} from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
+import type { NextConfig } from 'next';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -26,7 +31,7 @@ const nextConfig: NextConfig = {
   experimental: {
     outputFileTracingRoot: __dirname,
   },
-  webpack: (config, {dev}) => {
+  webpack: (config, { dev }) => {
     if (dev) {
       // Ignore system/agent directories to prevent constant rebuild loops
       config.watchOptions = {
@@ -39,4 +44,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
