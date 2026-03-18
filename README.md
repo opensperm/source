@@ -26,6 +26,7 @@ A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod)
 - Privy app ID (`NEXT_PUBLIC_PRIVY_APP_ID`)
 
 ## Environment variables (`.env.local`)
+Copy `.env.example` to `.env.local` and fill the required fields.
 ```
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 RUNPOD_API_KEY=your_runpod_api_key
