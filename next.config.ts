@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
     ],
   },
   transpilePackages: ['motion'],
+  // Avoid Next.js multiple lockfile warning when root differs.
+  experimental: {
+    outputFileTracingRoot: __dirname,
+  },
   webpack: (config, {dev}) => {
     if (dev) {
       // Ignore system/agent directories to prevent constant rebuild loops
