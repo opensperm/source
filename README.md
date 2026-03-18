@@ -7,6 +7,7 @@ Private AI agent dashboard + landing built on Next.js. Provision GPU pods on Run
 - [Stack](#stack)
 - [Features](#features)
 - [Architecture](#architecture)
+- [Diagrams](#diagrams)
 - [Directory layout](#directory-layout)
 - [Environment](#environment)
 - [Quickstart](#quickstart)
@@ -43,6 +44,51 @@ Private AI agent dashboard + landing built on Next.js. Provision GPU pods on Run
 **Ports**
 - Ollama: 11434 (RunPod proxy)
 - Open WebUI: 4000 (RunPod proxy)
+
+## Diagrams
+### High-level architecture
+```mermaid
+graph TD
+  U[User] -->|Auth| P[Privy]
+  U --> FE[Next.js Frontend]
+  FE --> API[/Next.js API Routes/]
+  API --> DB[(Postgres)]
+  API --> RP[RunPod GraphQL]
+  RP --> POD[GPU Pod]
+  POD -->|11434| Ollama
+  POD -->|4000| OpenWebUI
+  FE -.->|Status poll| API
+```
+
+### Deploy flow
+```mermaid
+sequenceDiagram
+  participant User
+  participant FE as Frontend
+  participant API as API /agents/deploy
+  participant RP as RunPod
+  participant DB as Postgres
+  User->>FE: Click Deploy
+  FE->>API: POST agentId
+  API->>DB: Read agent config
+  API->>RP: podFindAndDeployOnDemand (startup script)
+  RP-->>API: podId, proxy URL
+  API->>DB: Persist podId, agent_url, status=booting
+  API-->>FE: 200 booting
+  FE->>API: Poll /status
+  API->>RP: Query pod status
+  RP-->>API: pod ready
+  API->>DB: Update status=running
+  API-->>FE: running + agent_url
+```
+
+### Integrations at a glance
+- **Privy**: email auth (NEXT_PUBLIC_PRIVY_APP_ID)
+- **RunPod**: GPU pods via GraphQL; ports 11434/4000
+- **Ollama**: model serving inside pod
+- **Open WebUI**: UI in pod
+- **Sentry (opt)**: error tracking server-side
+- **Redis (opt)**: shared rate limiting
 
 ## Directory layout
 - `app/` — Next.js app router pages & API routes
