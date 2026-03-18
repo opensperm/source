@@ -2,7 +2,7 @@
 import { Plus, Terminal, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { usePrivy } from '@privy-io/react-auth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DeployModal } from './DeployModal';
 import { BootingCard } from './BootingCard';
 
@@ -36,7 +36,7 @@ export function Hero() {
 
   const email = user?.email?.address ?? '';
 
-  async function fetchAgents() {
+  const fetchAgents = useCallback(async () => {
     if (!email) return;
     setLoadingAgents(true);
     try {
@@ -48,12 +48,12 @@ export function Hero() {
     } finally {
       setLoadingAgents(false);
     }
-  }
+  }, [email]);
 
   useEffect(() => {
     if (authenticated && email) fetchAgents();
     else setAgents([]);
-  }, [authenticated, email]);
+  }, [authenticated, email, fetchAgents]);
 
   function handleDeployClick() {
     if (!authenticated) {

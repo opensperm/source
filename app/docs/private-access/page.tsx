@@ -12,7 +12,7 @@ export default function PrivateAccessPage() {
       </p>
       <ul className="list-disc pl-6 space-y-4 text-slate-600 mb-12">
         <li><strong>Secure Tunnels:</strong> We utilize WireGuard-based tunneling to create a direct, encrypted connection to your pod.</li>
-        <li><strong>No Man-in-the-Middle:</strong> The Opensperm routing layer only sees encrypted packets; it cannot read your prompts or the agent's responses.</li>
+        <li><strong>No Man-in-the-Middle:</strong> The Opensperm routing layer only sees encrypted packets; it cannot read your prompts or the agent’s responses.</li>
         <li><strong>Key Management:</strong> Your private keys are generated and stored locally on your device.</li>
       </ul>
 

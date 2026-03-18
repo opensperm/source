@@ -2,9 +2,16 @@
 import { PrivyProvider as BasePrivyProvider } from '@privy-io/react-auth';
 
 export function PrivyProvider({ children }: { children: React.ReactNode }) {
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+  // In CI or local without a valid Privy app ID, render children without the provider
+  if (!appId || appId.startsWith('dummy')) {
+    return <>{children}</>;
+  }
+
   return (
     <BasePrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      appId={appId}
       config={{
         loginMethods: ['email'],
         appearance: {

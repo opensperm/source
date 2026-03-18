@@ -73,6 +73,16 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
     setLogLines(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${line}`]);
   }, []);
 
+  const finishBoot = useCallback(async () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    setProgress(100);
+    setStepIndex(BOOT_STEPS.length);
+    setDone(true);
+    addLog('Agent is live at ' + (agent.agent_url !== 'pending' ? agent.agent_url : 'pod endpoint'));
+    onStatusChange(agent.id, 'running');
+  }, [agent.agent_url, agent.id, addLog, onStatusChange]);
+
   // Ping the server to reset idle timer while agent is in use
   const pingActive = useCallback(async () => {
     try {
@@ -118,7 +128,7 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
       }
     }
     triggerDeploy();
-  }, []);
+  }, [isBooting, agent.id, addLog]);
 
   // Poll RunPod status until running — also checks auto-shutdown eligibility
   useEffect(() => {
@@ -138,7 +148,7 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
     }
     pollStatus();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [done, isBooting]);
+  }, [done, isBooting, agent.id, finishBoot]);
 
   // Animated progress + steps (visual only)
   useEffect(() => {
@@ -199,17 +209,7 @@ export function BootingCard({ agent, onStatusChange, onDestroy }: Props) {
       clearInterval(progressInterval);
       stepTimers.forEach(t => clearTimeout(t));
     };
-  }, []);
-
-  async function finishBoot() {
-    if (completedRef.current) return;
-    completedRef.current = true;
-    setProgress(100);
-    setStepIndex(BOOT_STEPS.length);
-    setDone(true);
-    addLog('Agent is live at ' + (agent.agent_url !== 'pending' ? agent.agent_url : 'pod endpoint'));
-    onStatusChange(agent.id, 'running');
-  }
+  }, [isBooting, agent.booting_started_at, agent.gpu_instance, agent.llm_model, addLog]);
 
   async function handleDestroy() {
     if (!confirm(`Destroy agent "${agent.name}"?\n\nThis will permanently terminate the RunPod GPU server and stop billing. This cannot be undone.`)) return;

@@ -3,6 +3,12 @@ import type { NextRequest } from 'next/server';
 
 let initialized = false;
 
+const getClientIp = (req: NextRequest) => {
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0].trim();
+  const realIp = req.headers.get('x-real-ip');
+  return forwarded || realIp || undefined;
+};
+
 function ensureInit() {
   if (initialized) return;
   const dsn = process.env.SENTRY_DSN;
@@ -29,7 +35,7 @@ export function captureError(error: unknown, opts?: { req?: NextRequest; tags?: 
       scope.setContext('request', {
         method: opts.req.method,
         url: opts.req.url,
-        ip: opts.req.ip || opts.req.headers.get('x-forwarded-for') || undefined,
+        ip: getClientIp(opts.req),
       });
     }
     return Sentry.captureException(error);
