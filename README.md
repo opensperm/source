@@ -101,7 +101,49 @@ sequenceDiagram
   API-->>Cron: summary
 ```
 
+### Auth flow
+```mermaid
+sequenceDiagram
+  participant User
+  participant FE as Frontend
+  participant Privy
+  participant API
+  User->>FE: Open app
+  FE->>Privy: Show email login
+  Privy-->>FE: Session token
+  FE->>API: Fetch /api/agents?email=
+  API-->>FE: Agent list
+```
+
+### CI pipeline
+```mermaid
+graph TD
+  A[CI Trigger: push/pr] --> B[npm ci]
+  B --> C[Restore .next cache]
+  C --> D[lint]
+  D --> E[typecheck]
+  E --> F[build]
+  A --> G[Typecheck workflow] --> E
+  A --> H[Preview workflow] --> I[Build + upload .next artifact]
+```
+
 ### Integrations at a glance
+
+[![Privy](https://img.shields.io/badge/Auth-Privy-6C3BFF?logo=sketch&logoColor=white)](https://www.privy.io/)
+[![RunPod](https://img.shields.io/badge/GPU-RunPod-FF6B6B)](https://www.runpod.io/)
+[![Ollama](https://img.shields.io/badge/LLM-Ollama-000000)](https://ollama.com/)
+[![Open WebUI](https://img.shields.io/badge/UI-Open%20WebUI-4B8BF5)](https://github.com/open-webui/open-webui)
+[![Postgres](https://img.shields.io/badge/DB-Postgres-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Rate%20Limit-Redis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Sentry](https://img.shields.io/badge/Error%20Tracking-Sentry-362D59?logo=sentry&logoColor=white)](https://sentry.io/)
+
+- **Privy**: email auth (NEXT_PUBLIC_PRIVY_APP_ID)
+- **RunPod**: GPU pods via GraphQL; ports 11434/4000
+- **Ollama**: model serving inside pod
+- **Open WebUI**: UI in pod
+- **Sentry (opt)**: error tracking server-side
+- **Redis (opt)**: shared rate limiting
+
 - **Privy**: email auth (NEXT_PUBLIC_PRIVY_APP_ID)
 - **RunPod**: GPU pods via GraphQL; ports 11434/4000
 - **Ollama**: model serving inside pod
