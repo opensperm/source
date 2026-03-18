@@ -239,4 +239,6 @@ Image uses `npm ci --omit=dev` and `npm run start` after `npm run build`.
 - **Cache root warning**: If using multiple lockfiles, set `outputFileTracingRoot` in `next.config.js` to the repo root.
 
 ---
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for more detail and [API.md](./API.md) for endpoints.
+
 Happy hacking. For contributions, see [CONTRIBUTING.md](./CONTRIBUTING.md). For security issues, see [SECURITY.md](./SECURITY.md).
