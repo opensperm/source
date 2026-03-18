@@ -229,6 +229,16 @@ docker run -p 3000:3000 \
 ```
 Image uses `npm ci --omit=dev` and `npm run start` after `npm run build`.
 
+### Docker Compose (app + Postgres + Redis)
+For local dev smoke:
+```bash
+docker-compose up --build
+# app: http://localhost:3000
+# postgres: localhost:5432 (postgres/postgres)
+# redis: localhost:6379
+```
+Env defaults in `docker-compose.yml` use dummy keys; set real `DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID` for real deploys.
+
 ## Deploy previews
 `preview.yml` uploads the `.next` build artifact. Integrate your host (e.g., Vercel action, Netlify, Render) by replacing the placeholder step with your deploy action/token.
 
