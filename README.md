@@ -2,6 +2,10 @@
 
 ![Opensperm banner](./openspermbanner.png)
 
+[![CI](https://github.com/opensperm/source/actions/workflows/ci.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/ci.yml)
+[![Typecheck](https://github.com/opensperm/source/actions/workflows/typecheck.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/typecheck.yml)
+[![E2E](https://github.com/opensperm/source/actions/workflows/e2e.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/e2e.yml)
+
 Private AI agent dashboard + landing built on Next.js. Provision GPU pods on RunPod, install Ollama + Open WebUI, and expose a simple UI for deploy/status/destroy. Auth via Privy; data in Postgres. CI enforces lint/typecheck/build across Node 20/22.
 
 ---
