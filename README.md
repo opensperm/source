@@ -189,6 +189,7 @@ npm run dev   # http://localhost:5000
 - `npm run clean` — clear Next.js cache
 
 ## API overview (high level)
+- `GET /api/health` — uptime/health probe
 - `GET /api/agents?email=` — list agents for user
 - `POST /api/agents` — create agent (expects email/name/config)
 - `DELETE /api/agents?id=` — delete agent
