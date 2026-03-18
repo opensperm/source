@@ -1,5 +1,7 @@
 # Opensperm Source
 
+![Opensperm banner](./openspermbanner.png)
+
 Private AI agent dashboard + landing built on Next.js. Provision GPU pods on RunPod, install Ollama + Open WebUI, and expose a simple UI for deploy/status/destroy. Auth via Privy; data in Postgres. CI enforces lint/typecheck/build across Node 20/22.
 
 ---
