@@ -1,47 +1,77 @@
-
 # Opensperm Source
 
-A landing + dashboard for deploying private AI agents on dedicated GPUs (RunPod) with Ollama and Open WebUI. Auth uses Privy; backend is Next.js API routes backed by Postgres.
+Private AI agent dashboard + landing built on Next.js. Provision GPU pods on RunPod, install Ollama + Open WebUI, and expose a simple UI for deploy/status/destroy. Auth via Privy; data in Postgres. CI enforces lint/typecheck/build across Node 20/22.
 
-[![CI](https://github.com/opensperm/source/actions/workflows/ci.yml/badge.svg)](https://github.com/opensperm/source/actions/workflows/ci.yml)
+---
+## Contents
+- [Stack](#stack)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Directory layout](#directory-layout)
+- [Environment](#environment)
+- [Quickstart](#quickstart)
+- [Scripts](#scripts)
+- [API overview](#api-overview)
+- [CI/CD](#cicd)
+- [Testing](#testing)
+- [Docker](#docker)
+- [Deploy previews](#deploy-previews)
+- [Troubleshooting](#troubleshooting)
 
-## Architecture (what happens)
-- **Frontend**: Next.js 15 / React 19, Tailwind CSS 4. Pages live in `app/`. Components for hero/deploy cards/etc. in `components/`.
-- **Auth**: Privy email auth (`NEXT_PUBLIC_PRIVY_APP_ID`) via `components/PrivyProvider`.
-- **State + data**: Agents stored in Postgres (`DATABASE_URL`) and served via API routes under `app/api/agents/*` and `app/api/installer`.
-- **Compute**: RunPod GraphQL is used to spin up GPU pods. Startup script installs Ollama, pulls model, and boots Open WebUI.
-- **Runtime target**: Pods expose 11434 (Ollama) and 4000 (Open WebUI) via RunPod proxy; UI displays the public URL.
+---
+## Stack
+- **Frontend**: Next.js 15 / React 19, Tailwind 4
+- **Auth**: Privy (email)
+- **Backend**: Next.js API routes, Postgres
+- **GPU runtime**: RunPod GraphQL → deploy pods; installs Ollama + Open WebUI
+- **Error tracking (optional)**: Sentry
 
-## Folders
-- `app/` — Next.js app router pages and API routes
-  - `app/api/agents/*` — CRUD + deploy + status for agents
-  - `app/api/installer` — helper installer endpoint
-- `components/` — UI pieces (hero, deploy modal, cards, etc.)
-- `hooks/`, `lib/`, `types/` — utilities and typings
+## Features
+- Email login (Privy) → personalized agent list
+- Create/boot/destroy agents on RunPod; auto-shutdown hook
+- Ollama model pull + Open WebUI bootstrap in startup script
+- Status polling + logs for booting flow
 
-## Requirements
-- Node.js 20+
-- Postgres instance reachable via `DATABASE_URL`
-- RunPod API key (`RUNPOD_API_KEY`)
-- Privy app ID (`NEXT_PUBLIC_PRIVY_APP_ID`)
+## Architecture
+**Flow**
+1) User signs in (Privy) → fetch agents by email.
+2) Deploy: API builds startup script (Ollama + Open WebUI), calls RunPod `podFindAndDeployOnDemand`, stores `pod_id`/`agent_url`/status.
+3) Status: poll RunPod; update DB; UI reacts.
+4) Destroy: delete pod + DB row.
+5) Auto-shutdown: background endpoint to stop idle pods.
 
-## Environment variables (`.env.local`)
-Copy `.env.example` to `.env.local` and fill the required fields.
+**Ports**
+- Ollama: 11434 (RunPod proxy)
+- Open WebUI: 4000 (RunPod proxy)
+
+## Directory layout
+- `app/` — Next.js app router pages & API routes
+  - `app/api/agents/*` — CRUD, deploy, status, destroy, auto-shutdown, ping
+  - `app/api/installer` — installer helper
+- `components/` — UI pieces (hero, deploy modal, status cards, etc.)
+- `lib/`, `hooks/`, `types/` — utilities and typings
+- `tests/` — Playwright smoke tests
+- `.github/workflows/` — CI, typecheck, preview
+
+## Environment
+Copy `.env.example` → `.env.local` and fill the required values.
 ```
+# Required
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 RUNPOD_API_KEY=your_runpod_api_key
 NEXT_PUBLIC_PRIVY_APP_ID=your_privy_app_id
-# Optional: enable shared rate limit store
+
+# Optional
 REDIS_URL=redis://user:pass@host:6379/0
-# Optional: error tracking (set DSN to enable Sentry)
 SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
-# Optional: pin Open WebUI and verify installers
 OPENWEBUI_VERSION=0.3.x
 OLLAMA_INSTALL_SHA256=...
 NODE_SETUP_SHA256=...
 ```
 
-## Quickstart (local)
+> Tip: In CI we use dummy Privy ID; `PrivyProvider` will skip if app ID is missing/dummy.
+
+## Quickstart
 ```bash
 npm install
 npm run dev   # http://localhost:5000
@@ -53,34 +83,58 @@ npm run dev   # http://localhost:5000
 - `npm run start` — serve built app
 - `npm run lint` — ESLint
 - `npm run typecheck` — TS type checking
+- `npm run test:e2e` — Playwright smoke tests
 - `npm run clean` — clear Next.js cache
 
-## Core flows
-- **Auth flow**: Privy widget handles email sign-in. When authenticated, UI shows agent list for the user email.
-- **Agent listing**: `/api/agents?email=...` fetches agents from Postgres; UI renders cards.
-- **Deploy flow** (`app/api/agents/deploy`):
-  1) Read agent by `agentId` from Postgres.
-  2) Map requested GPU + LLM to RunPod and Ollama model.
-  3) Build startup script (install Ollama, pull model, install Open WebUI, start both).
-  4) Call RunPod GraphQL `podFindAndDeployOnDemand` with script (base64) and ports 11434/4000 exposed.
-  5) Persist `pod_id`, `agent_url` (RunPod proxy), status `booting`, `booting_started_at` in DB.
-- **Status flow** (`app/api/agents/status`): poll RunPod for pod status; update DB.
-- **Auto-shutdown** (`app/api/agents/auto-shutdown`): stops pods when criteria met.
-- **Destroy** (`app/api/agents/route` DELETE): remove pod + DB row (see API for details).
-
-## API reference (high level)
+## API overview (high level)
 - `GET /api/agents?email=` — list agents for user
 - `POST /api/agents` — create agent (expects email/name/config)
 - `DELETE /api/agents?id=` — delete agent
-- `POST /api/agents/deploy` — deploy an agent to RunPod
-- `GET /api/agents/status?id=` — fetch + update pod status
+- `POST /api/agents/deploy` — deploy agent to RunPod
+- `GET /api/agents/status?id=` — poll RunPod + update DB
 - `POST /api/agents/auto-shutdown` — shutdown policy hook
-- `GET /api/agents/ping` — health check
-- `GET /api/agents/single?id=` — fetch single agent
+- `GET /api/agents/ping` — keep-alive hook
+- `GET /api/agents/single?id=` — fetch one agent
 - `POST /api/installer` — installer helper
 
-## Notes
-- Missing or invalid env vars will break deploy/status flows; set all three (`DATABASE_URL`, `RUNPOD_API_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`). Use least-privilege DB credentials (schema-limited) and do not expose `DATABASE_URL` in UI/logs.
-- RunPod startup script lives inline in `app/api/agents/deploy`; it installs Ollama, pulls the chosen model, and launches Open WebUI on port 4000 with Ollama at 11434. You can pin Open WebUI and verify installer checksums via env vars.
-- Tailwind 4 is used (no `tailwind.config.js`); styles are largely utility-first with a few custom classes.
-- Default port is 5000 for both dev and start.
+## CI/CD
+- **CI**: `.github/workflows/ci.yml`
+  - Matrix Node 20/22
+  - npm ci → Next cache restore → lint → typecheck → build (env dummy)
+- **Typecheck**: `.github/workflows/typecheck.yml`
+  - Matrix Node 20/22
+  - npm ci → Next cache → typecheck → build (env dummy)
+- **Preview**: `.github/workflows/preview.yml`
+  - Builds and uploads `.next` artifact (placeholder to integrate hosting deploy)
+- **Dependabot**: npm + GitHub Actions weekly
+- **CODEOWNERS**: `@opensperm` owns all paths
+
+## Testing
+- **Playwright smoke**: `npm run test:e2e`
+  - Config: `playwright.config.ts`
+  - Tests: `tests/smoke.spec.ts` (home, docs load)
+
+## Docker
+Basic production image:
+```bash
+docker build -t opensperm-app .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=... \
+  -e RUNPOD_API_KEY=... \
+  -e NEXT_PUBLIC_PRIVY_APP_ID=... \
+  opensperm-app
+```
+Image uses `npm ci --omit=dev` and `npm run start` after `npm run build`.
+
+## Deploy previews
+`preview.yml` uploads the `.next` build artifact. Integrate your host (e.g., Vercel action, Netlify, Render) by replacing the placeholder step with your deploy action/token.
+
+## Troubleshooting
+- **Privy app ID invalid**: Set `NEXT_PUBLIC_PRIVY_APP_ID` (non-dummy) in env. In CI it’s intentionally dummy; provider skips when dummy.
+- **RunPod deploy fails**: Ensure `RUNPOD_API_KEY` valid and GPU/LLM mapping exists; check startup script in `app/api/agents/deploy`.
+- **Postgres connection**: Verify `DATABASE_URL`; use least-privilege creds; allow network from runtime.
+- **Next build warning (opentelemetry)**: Comes from `@sentry/node` dep; safe to ignore unless you enable Sentry. Set Sentry DSN only in prod.
+- **Cache root warning**: If using multiple lockfiles, set `outputFileTracingRoot` in `next.config.js` to the repo root.
+
+---
+Happy hacking. For contributions, see [CONTRIBUTING.md](./CONTRIBUTING.md). For security issues, see [SECURITY.md](./SECURITY.md).
