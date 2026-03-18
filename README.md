@@ -18,6 +18,9 @@ Private AI agent dashboard + landing built on Next.js. Provision GPU pods on Run
 - [Docker](#docker)
 - [Deploy previews](#deploy-previews)
 - [Troubleshooting](#troubleshooting)
+- [Data model](#data-model)
+- [Auto-shutdown](#auto-shutdown)
+
 
 ---
 ## Stack
@@ -63,6 +66,23 @@ graph TD
 ### Deploy flow
 ```mermaid
 sequenceDiagram
+
+### Auto-shutdown flow
+```mermaid
+sequenceDiagram
+  participant Cron as Scheduler/Watcher
+  participant API as API /agents/auto-shutdown
+  participant RP as RunPod
+  participant DB as Postgres
+  Cron->>API: POST /auto-shutdown
+  API->>DB: Fetch agents + idle thresholds
+  API->>RP: Query pod status/metrics
+  RP-->>API: status
+  API->>RP: stopPod (if idle/expired)
+  API->>DB: Update status = stopped
+  API-->>Cron: summary
+```
+
   participant User
   participant FE as Frontend
   participant API as API /agents/deploy
@@ -89,6 +109,19 @@ sequenceDiagram
 - **Open WebUI**: UI in pod
 - **Sentry (opt)**: error tracking server-side
 - **Redis (opt)**: shared rate limiting
+
+## Data model
+```mermaid
+graph LR
+  AGENT[(agents)]
+  AGENT -->|id| POD_ID[pod_id]
+  AGENT -->|agent_url| URL[runpod proxy url]
+  AGENT -->|llm_model| LLM[ollama model]
+  AGENT -->|gpu_instance| GPU[gpu type]
+  AGENT -->|status| STATUS[booting/running/stopped]
+  AGENT -->|email| USER[user owner]
+  AGENT -->|deploy_id| DEPLOY[runpod deploy id]
+```
 
 ## Directory layout
 - `app/` — Next.js app router pages & API routes
