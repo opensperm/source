@@ -9,7 +9,6 @@ type Level = 'info' | 'warn' | 'error';
 function base(level: Level, req: NextRequest | null, message: string, meta?: Record<string, unknown>) {
   const requestId = req ? getRequestId(req) : 'no-request-id';
   const payload = { level, requestId, msg: message, ...(meta || {}) };
-  // eslint-disable-next-line no-console
   console[level](JSON.stringify(payload));
 }
 
